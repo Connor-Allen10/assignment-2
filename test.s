@@ -20,6 +20,25 @@ main_loop:
 	je done
 
 	xorq %rdx, %rdx
+cap_loop:
+	movzbq (%rsi, %rdx), %rax /* load rsi + rdx into rax */
+	testb %al, %al /* check if 0 (null terminator) */
+	je cap_done /* if yes, done */
+
+	cmpb $'a', %al /* compare with a */
+	jb cap_next /* skip if below a */
+	cmpb $'z', %al /* compare with z */
+	ja cap_next /* skip if above z */
+
+	subb $0x20, %al /* subtract 0x20 to capitalize */
+	movb %al, (%rsi, %rdx) /* write al to memory */
+
+cap_next:
+	addq $1, %rdx /* increment rdx, move to next character */
+	jmp cap_loop 
+
+cap_done:
+	xorq %rdx, %rdx /* rdx = 0 */
 get_str_len:
 
 	cmpb $0, (%rsi, %rdx)
@@ -27,15 +46,18 @@ get_str_len:
 
 	addq $1, %rdx
 	jmp get_str_len
+
 get_str_len_done:
 
-mov $STDOUT_FILENO, %rdi
+	mov $STDOUT_FILENO, %rdi
 
-test %r13, %r12
-je write_loop
+	test %r13, %r12
+	je write_loop
 
-movb $' ', (%rsi, %rdx)
-addq $1, %rdx
+	movb $' ', (%rsi, %rdx)
+	addq $1, %rdx
+	
+	movq %rsi, %rbx
 
 write_loop:
 	mov $SYS_write, %rax
